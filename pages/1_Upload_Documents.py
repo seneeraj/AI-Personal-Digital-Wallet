@@ -1,40 +1,8 @@
-import streamlit as st
 import os
 import uuid
+import traceback
 
-from modules.encryption.aes_encryptor import (
-    encrypt_file
-)
-
-from modules.ocr.ocr_engine import (
-
-    extract_text_from_image,
-
-    extract_text_from_pdf
-)
-
-from modules.ai.document_classifier import (
-    classify_document
-)
-
-from modules.ai.expiry_detector import (
-    detect_expiry_date
-)
-
-from database.insert_document import (
-    insert_document
-)
-
-from security.auth_guard import (
-    require_login
-)
-
-from modules.storage.supabase_storage import (
-    upload_encrypted_file
-)
-
-
-require_login()
+import streamlit as st
 
 # =====================================================
 # PAGE CONFIG
@@ -47,7 +15,105 @@ st.set_page_config(
 )
 
 # =====================================================
-# TITLE
+# AUTH GUARD
+# =====================================================
+
+from security.auth_guard import (
+    require_login
+)
+
+require_login()
+
+# =====================================================
+# LOAD CSS
+# =====================================================
+
+def load_css():
+
+    css_path = "assets/style.css"
+
+    if os.path.exists(css_path):
+
+        with open(
+            css_path,
+            "r",
+            encoding="utf-8"
+        ) as f:
+
+            st.markdown(
+                f"<style>{f.read()}</style>",
+                unsafe_allow_html=True
+            )
+
+load_css()
+
+# =====================================================
+# CREATE REQUIRED FOLDERS
+# =====================================================
+
+os.makedirs(
+    "uploads/temp",
+    exist_ok=True
+)
+
+os.makedirs(
+    "encrypted_storage",
+    exist_ok=True
+)
+
+os.makedirs(
+    "temp_decrypted",
+    exist_ok=True
+)
+
+# =====================================================
+# IMPORT MODULES
+# =====================================================
+
+from modules.uploads.upload_handler import (
+    save_temp_file
+)
+
+from modules.ocr.ocr_engine import (
+    extract_text_from_file
+)
+
+from modules.ai.document_classifier import (
+    classify_document
+)
+
+from modules.ai.tag_generator import (
+    generate_tags
+)
+
+from modules.ai.expiry_detector import (
+    detect_expiry_date
+)
+
+from modules.encryption.aes_encryptor import (
+    encrypt_file
+)
+
+from modules.storage.supabase_storage import (
+    upload_encrypted_file
+)
+
+from database.insert_document import (
+    insert_document
+)
+
+# =====================================================
+# SESSION STATE
+# =====================================================
+
+if "upload_completed" not in st.session_state:
+
+    st.session_state[
+        "upload_completed"
+    ] = False
+
+# =====================================================
+# PAGE TITLE
 # =====================================================
 
 st.title("⬆️ Upload Documents")
@@ -57,6 +123,22 @@ st.caption(
 )
 
 st.divider()
+
+# =====================================================
+# SUCCESS MESSAGE
+# =====================================================
+
+if st.session_state[
+    "upload_completed"
+]:
+
+    st.success(
+        "✅ Document uploaded successfully."
+    )
+
+    st.session_state[
+        "upload_completed"
+    ] = False
 
 # =====================================================
 # FILE UPLOADER
@@ -78,24 +160,21 @@ uploaded_files = st.file_uploader(
 )
 
 # =====================================================
-# CATEGORY SELECTION
+# CATEGORY
 # =====================================================
 
-categories = [
+category = st.selectbox(
 
-    "Personal",
-    "Financial",
-    "Medical",
-    "Education",
-    "Legal",
-    "Uncategorized"
-]
+    "📁 Select Default Category",
 
-selected_category = st.selectbox(
-
-    "📂 Select Default Category",
-
-    categories
+    [
+        "Personal",
+        "Financial",
+        "Medical",
+        "Educational",
+        "Legal",
+        "Other"
+    ]
 )
 
 # =====================================================
@@ -117,9 +196,7 @@ user_notes = st.text_area(
 
     "📝 Notes",
 
-    placeholder="Optional notes about document",
-
-    height=120
+    placeholder="Optional notes..."
 )
 
 st.divider()
@@ -130,281 +207,250 @@ st.divider()
 
 if st.button("🚀 Upload Documents"):
 
+    # =================================================
+    # VALIDATION
+    # =================================================
+
     if not uploaded_files:
 
         st.warning(
-            "Please upload at least one file."
+            "Please upload at least one document."
         )
 
     else:
-
-        progress_bar = st.progress(0)
-
-        total_files = len(uploaded_files)
-
-        # =============================================
-        # CREATE REQUIRED FOLDERS
-        # =============================================
-
-        os.makedirs(
-            "uploads/temp",
-            exist_ok=True
-        )
-
-        os.makedirs(
-            "encrypted_storage",
-            exist_ok=True
-        )
 
         # =============================================
         # PROCESS FILES
         # =============================================
 
-        for index, uploaded_file in enumerate(uploaded_files):
+        for uploaded_file in uploaded_files:
 
             try:
 
-                # =====================================
-                # UNIQUE FILE NAME
-                # =====================================
+                with st.spinner(
 
-                unique_name = (
-
-                    str(uuid.uuid4())
-                    + "_"
-                    + uploaded_file.name
-                )
-
-                # =====================================
-                # TEMP FILE PATH
-                # =====================================
-
-                temp_path = os.path.join(
-
-                    "uploads/temp",
-
-                    unique_name
-                )
-
-                # =====================================
-                # SAVE TEMP FILE
-                # =====================================
-
-                with open(temp_path, "wb") as f:
-
-                    f.write(
-                        uploaded_file.getbuffer()
-                    )
-
-                # =====================================
-                # OCR EXTRACTION
-                # =====================================
-
-                ocr_text = ""
-
-                # =====================================
-                # IMAGE OCR
-                # =====================================
-
-                if uploaded_file.name.lower().endswith(
-
-                    (".png", ".jpg", ".jpeg")
-
+                    f"Processing {uploaded_file.name}..."
                 ):
 
-                    ocr_text = extract_text_from_image(
-                        temp_path
+                    # =================================
+                    # SAVE TEMP FILE
+                    # =================================
+
+                    temp_path = save_temp_file(
+                        uploaded_file
                     )
 
-                # =====================================
-                # PDF TEXT EXTRACTION
-                # =====================================
+                    # =================================
+                    # OCR EXTRACTION
+                    # =================================
 
-                elif uploaded_file.name.lower().endswith(
-                    ".pdf"
-                ):
+                    try:
 
-                    ocr_text = extract_text_from_pdf(
-                        temp_path
+                        ocr_text = (
+                            extract_text_from_file(
+                                temp_path
+                            )
+                        )
+
+                    except Exception:
+
+                        ocr_text = ""
+
+                    # =================================
+                    # AI CATEGORY
+                    # =================================
+
+                    try:
+
+                        ai_category = (
+                            classify_document(
+                                ocr_text
+                            )
+                        )
+
+                    except Exception:
+
+                        ai_category = category
+
+                    final_category = (
+
+                        ai_category
+                        if ai_category
+                        else category
                     )
 
-                # =====================================
-                # AI CLASSIFICATION
-                # =====================================
+                    # =================================
+                    # AI TAGS
+                    # =================================
 
-                ai_category, ai_tags = classify_document(
-                    ocr_text
-                )
+                    try:
 
-                # =====================================
-                # EXPIRY DETECTION
-                # =====================================
+                        ai_tags = generate_tags(
+                            ocr_text
+                        )
 
-                detected_expiry = detect_expiry_date(
-                    ocr_text
-                )
+                    except Exception:
 
-                # =====================================
-                # FINAL CATEGORY
-                # =====================================
+                        ai_tags = []
 
-                final_category = (
+                    # =================================
+                    # USER TAGS
+                    # =================================
 
-                    ai_category
+                    manual_tags = [
 
-                    if ai_category != "Uncategorized"
+                        tag.strip()
 
-                    else selected_category
-                )
+                        for tag in user_tags.split(",")
 
-                # =====================================
-                # COMBINE TAGS
-                # =====================================
+                        if tag.strip()
+                    ]
 
-                user_tags_list = [
+                    # =================================
+                    # COMBINED TAGS
+                    # =================================
 
-                    tag.strip()
+                    combined_tags = list(
 
-                    for tag in user_tags.split(",")
-
-                    if tag.strip()
-                ]
-
-                combined_tags = ", ".join(
-
-                    list(
                         set(
-                            ai_tags
-                            + user_tags_list
+                            ai_tags + manual_tags
                         )
                     )
-                )
 
-                # =====================================
-                # ENCRYPTED FILE NAME
-                # =====================================
-
-                encrypted_filename = (
-                    uploaded_file.name
-                    + ".enc"
-                )
-
-                # =============================================
-                # UNIQUE ENCRYPTED FILENAME
-                # =============================================
-                
-                unique_filename = (
-                    str(uuid.uuid4())
-                )
-
-                # =====================================
-                # ENCRYPT FILE
-                # =====================================
-
-                encrypt_file(
-
-                    temp_path,
-
-                    encrypted_path
-                )
-
-                # =============================================
-                # UPLOAD ENCRYPTED FILE TO SUPABASE
-                # =============================================
-
-                upload_encrypted_file(
-
-                    encrypted_path,
-
-                    unique_filename + ".enc"
-                )
-
-
-
-
-                # =====================================
-                # SAVE TO DATABASE
-                # =====================================
-
-                insert_document(
-
-                    document_name=uploaded_file.name,
-
-                    document_category=final_category,
-
-                    encrypted_path=(
-                    unique_filename + ".enc"
-                ),
-                    ocr_text=ocr_text,
-
-                    tags=combined_tags,
-
-                    notes=user_notes,
-                    
-                    expiry_date=detected_expiry
-                )
-
-                # =====================================
-                # REMOVE TEMP FILE
-                # =====================================
-
-                if os.path.exists(temp_path):
-
-                    os.remove(temp_path)
-
-                # =====================================
-                # PROGRESS BAR
-                # =====================================
-
-                progress = int(
-
-                    ((index + 1) / total_files)
-                    * 100
-                )
-
-                progress_bar.progress(progress)
-
-                # =====================================
-                # SUCCESS MESSAGE
-                # =====================================
-
-                st.success(
-                    f"✅ Uploaded: "
-                    f"{uploaded_file.name}"
-                )
-
-                # =====================================
-                # INFO MESSAGE
-                # =====================================
-
-                info_message = f"""
-📂 Category: {final_category}
-
-🏷️ Tags: {combined_tags}
-"""
-
-                if detected_expiry:
-
-                    info_message += (
-                        f"\n\n📅 Expiry Detected: "
-                        f"{detected_expiry}"
+                    combined_tags = ",".join(
+                        combined_tags
                     )
 
-                st.info(info_message)
+                    # =================================
+                    # EXPIRY DATE
+                    # =================================
+
+                    try:
+
+                        detected_expiry = (
+                            detect_expiry_date(
+                                ocr_text
+                            )
+                        )
+
+                    except Exception:
+
+                        detected_expiry = None
+
+                    # =================================
+                    # UNIQUE ENCRYPTED FILENAME
+                    # =================================
+
+                    unique_filename = str(
+                        uuid.uuid4()
+                    )
+
+                    # =================================
+                    # LOCAL ENCRYPTED FILE PATH
+                    # =================================
+
+                    encrypted_path = os.path.join(
+
+                        "encrypted_storage",
+
+                        unique_filename + ".enc"
+                    )
+
+                    # =================================
+                    # ENCRYPT FILE
+                    # =================================
+
+                    encrypt_file(
+
+                        temp_path,
+
+                        encrypted_path
+                    )
+
+                    # =================================
+                    # UPLOAD TO SUPABASE STORAGE
+                    # =================================
+
+                    upload_response = (
+                        upload_encrypted_file(
+
+                            encrypted_path,
+
+                            unique_filename + ".enc"
+                        )
+                    )
+
+                    # =================================
+                    # VERIFY STORAGE UPLOAD
+                    # =================================
+
+                    if upload_response is None:
+
+                        st.error(
+                            f"❌ Storage upload failed for "
+                            f"{uploaded_file.name}"
+                        )
+
+                        continue
+
+                    # =================================
+                    # SAVE METADATA TO SUPABASE
+                    # =================================
+
+                    insert_document(
+
+                        document_name=uploaded_file.name,
+
+                        document_category=final_category,
+
+                        encrypted_path=(
+                            unique_filename + ".enc"
+                        ),
+
+                        ocr_text=ocr_text,
+
+                        tags=combined_tags,
+
+                        notes=user_notes,
+
+                        expiry_date=detected_expiry
+                    )
+
+                    # =================================
+                    # DELETE TEMP FILES
+                    # =================================
+
+                    if os.path.exists(temp_path):
+
+                        os.remove(temp_path)
+
+                    # =================================
+                    # OPTIONAL LOCAL CLEANUP
+                    # =================================
+
+                    # if os.path.exists(
+                    #     encrypted_path
+                    # ):
+                    #
+                    #     os.remove(
+                    #         encrypted_path
+                    #     )
+
+                # =====================================
+                # SUCCESS FLAG
+                # =====================================
+
+                st.session_state[
+                    "upload_completed"
+                ] = True
 
             except Exception as e:
 
                 st.error(
-
                     f"❌ Error uploading "
-
                     f"{uploaded_file.name}: {e}"
                 )
 
-        st.success(
-            "🎉 All documents uploaded successfully."
-        )
-
-        st.info(
-            "Files encrypted and stored securely."
-        )
+                st.code(
+                    traceback.format_exc()
+                )
