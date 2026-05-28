@@ -362,3 +362,88 @@ header {
 
     visibility: hidden;
 }
+
+
+/* =====================================================
+   FILE UPLOADER BUTTON FIX
+===================================================== */
+
+[data-testid="stFileUploader"] button {
+
+    background: linear-gradient(
+        135deg,
+        #2563eb,
+        #7c3aed
+    ) !important;
+
+    color: #ffffff !important;
+
+    border: none !important;
+
+    border-radius: 12px !important;
+
+    font-weight: 700 !important;
+}
+
+/* BUTTON TEXT */
+
+[data-testid="stFileUploader"] button * {
+
+    color: #ffffff !important;
+}
+
+/* FILE UPLOADER DROPZONE TEXT */
+
+[data-testid="stFileUploaderDropzone"] * {
+
+    color: #f8fafc !important;
+}
+
+/* =====================================================
+   FORM SUBMIT BUTTON FIX
+===================================================== */
+
+.stForm button {
+
+    background: linear-gradient(
+        135deg,
+        #2563eb,
+        #7c3aed
+    ) !important;
+
+    color: #ffffff !important;
+
+    font-weight: 700 !important;
+
+    border-radius: 14px !important;
+}
+
+/* =====================================================
+   BUTTON LABEL FIX
+===================================================== */
+
+button p,
+button span,
+button div {
+
+    color: #ffffff !important;
+}
+
+/* =====================================================
+   SETTINGS BUTTON FIX
+===================================================== */
+
+.stButton button {
+
+    color: white !important;
+}
+
+/* =====================================================
+   PASSWORD FIELD ICON FIX
+===================================================== */
+
+[data-testid="stTextInput"] svg {
+
+    color: #cbd5e1 !important;
+}
+
