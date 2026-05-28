@@ -5,6 +5,12 @@ from sqlalchemy import select
 from database.models import documents
 from database.db_manager import engine
 
+from security.auth_guard import (
+    require_login
+)
+
+require_login()
+
 # =====================================================
 # PAGE CONFIG
 # =====================================================
