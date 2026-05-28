@@ -1,0 +1,158 @@
+/* =====================================================
+   GLOBAL APP STYLING
+===================================================== */
+
+html, body, [class*="css"]  {
+
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* =====================================================
+   MAIN BACKGROUND
+===================================================== */
+
+.stApp {
+
+    background: linear-gradient(
+        135deg,
+        #0E1117,
+        #111827,
+        #0F172A
+    );
+
+    color: white;
+}
+
+/* =====================================================
+   SIDEBAR
+===================================================== */
+
+section[data-testid="stSidebar"] {
+
+    background: rgba(22, 27, 34, 0.85);
+
+    backdrop-filter: blur(14px);
+
+    border-right: 1px solid rgba(255,255,255,0.08);
+}
+
+/* =====================================================
+   HEADINGS
+===================================================== */
+
+h1, h2, h3 {
+
+    color: #00E5FF;
+
+    font-weight: 700;
+}
+
+/* =====================================================
+   GLASS CARD EFFECT
+===================================================== */
+
+.glass-card {
+
+    background: rgba(255,255,255,0.06);
+
+    border-radius: 20px;
+
+    padding: 20px;
+
+    backdrop-filter: blur(12px);
+
+    border: 1px solid rgba(255,255,255,0.08);
+
+    box-shadow:
+        0 8px 32px rgba(0,0,0,0.3);
+
+    margin-bottom: 20px;
+}
+
+/* =====================================================
+   BUTTONS
+===================================================== */
+
+.stButton > button {
+
+    width: 100%;
+
+    border-radius: 12px;
+
+    height: 3em;
+
+    border: none;
+
+    background: linear-gradient(
+        90deg,
+        #00E5FF,
+        #007CF0
+    );
+
+    color: white;
+
+    font-size: 16px;
+
+    font-weight: bold;
+
+    transition: 0.3s;
+}
+
+.stButton > button:hover {
+
+    transform: scale(1.03);
+
+    box-shadow:
+        0 0 20px rgba(0,229,255,0.4);
+}
+
+/* =====================================================
+   INPUT FIELDS
+===================================================== */
+
+.stTextInput > div > div > input,
+.stTextArea textarea {
+
+    background-color: rgba(255,255,255,0.06);
+
+    color: white;
+
+    border-radius: 12px;
+
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* =====================================================
+   FILE UPLOADER
+===================================================== */
+
+[data-testid="stFileUploader"] {
+
+    background: rgba(255,255,255,0.04);
+
+    border-radius: 18px;
+
+    padding: 20px;
+
+    border: 2px dashed rgba(0,229,255,0.4);
+}
+
+/* =====================================================
+   DATAFRAME
+===================================================== */
+
+[data-testid="stDataFrame"] {
+
+    border-radius: 18px;
+
+    overflow: hidden;
+}
+
+/* =====================================================
+   ALERTS
+===================================================== */
+
+.stAlert {
+
+    border-radius: 14px;
+}
