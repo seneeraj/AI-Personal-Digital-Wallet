@@ -2,25 +2,44 @@
    GLOBAL APP STYLING
 ===================================================== */
 
-html, body, [class*="css"]  {
+html,
+body,
+[class*="css"] {
 
-    font-family: 'Segoe UI', sans-serif;
+    font-family: "Inter", "Segoe UI", sans-serif;
 }
 
 /* =====================================================
-   MAIN BACKGROUND
+   MAIN APPLICATION
 ===================================================== */
 
 .stApp {
 
     background: linear-gradient(
         135deg,
-        #0E1117,
-        #111827,
-        #0F172A
+        #020617 0%,
+        #06122e 45%,
+        #071b45 100%
     );
 
-    color: white;
+    color: #f8fafc;
+}
+
+/* =====================================================
+   MAIN CONTENT AREA
+===================================================== */
+
+.main .block-container {
+
+    padding-top: 2rem;
+
+    padding-bottom: 2rem;
+
+    padding-left: 3rem;
+
+    padding-right: 3rem;
+
+    max-width: 1400px;
 }
 
 /* =====================================================
@@ -29,22 +48,60 @@ html, body, [class*="css"]  {
 
 section[data-testid="stSidebar"] {
 
-    background: rgba(22, 27, 34, 0.85);
+    background: rgba(15, 23, 42, 0.95);
 
     backdrop-filter: blur(14px);
 
-    border-right: 1px solid rgba(255,255,255,0.08);
+    border-right: 1px solid rgba(255,255,255,0.06);
+}
+
+/* SIDEBAR TEXT */
+
+section[data-testid="stSidebar"] * {
+
+    color: #f8fafc !important;
 }
 
 /* =====================================================
    HEADINGS
 ===================================================== */
 
-h1, h2, h3 {
+h1 {
 
-    color: #00E5FF;
+    color: #ffffff !important;
 
-    font-weight: 700;
+    font-size: 3rem !important;
+
+    font-weight: 800 !important;
+
+    letter-spacing: -1px;
+}
+
+h2 {
+
+    color: #ffffff !important;
+
+    font-size: 2rem !important;
+
+    font-weight: 700 !important;
+}
+
+h3 {
+
+    color: #e2e8f0 !important;
+
+    font-weight: 600 !important;
+}
+
+/* =====================================================
+   PARAGRAPHS & TEXT
+===================================================== */
+
+p,
+span,
+div {
+
+    color: #cbd5e1;
 }
 
 /* =====================================================
@@ -53,18 +110,18 @@ h1, h2, h3 {
 
 .glass-card {
 
-    background: rgba(255,255,255,0.06);
+    background: rgba(15, 23, 42, 0.65);
 
-    border-radius: 20px;
+    border-radius: 24px;
 
-    padding: 20px;
+    padding: 24px;
 
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(14px);
 
-    border: 1px solid rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.06);
 
     box-shadow:
-        0 8px 32px rgba(0,0,0,0.3);
+        0 10px 35px rgba(0,0,0,0.28);
 
     margin-bottom: 20px;
 }
@@ -77,49 +134,116 @@ h1, h2, h3 {
 
     width: 100%;
 
-    border-radius: 12px;
-
-    height: 3em;
+    border-radius: 14px;
 
     border: none;
 
+    min-height: 52px;
+
     background: linear-gradient(
-        90deg,
-        #00E5FF,
-        #007CF0
+        135deg,
+        #2563eb,
+        #7c3aed
     );
 
-    color: white;
+    color: white !important;
 
     font-size: 16px;
 
-    font-weight: bold;
+    font-weight: 700;
 
-    transition: 0.3s;
+    transition: all 0.25s ease;
+
+    box-shadow:
+        0 8px 25px rgba(59,130,246,0.25);
 }
 
 .stButton > button:hover {
 
-    transform: scale(1.03);
+    transform: translateY(-2px);
 
     box-shadow:
-        0 0 20px rgba(0,229,255,0.4);
+        0 12px 30px rgba(124,58,237,0.35);
 }
 
 /* =====================================================
    INPUT FIELDS
 ===================================================== */
 
-.stTextInput > div > div > input,
+.stTextInput input,
 .stTextArea textarea {
 
-    background-color: rgba(255,255,255,0.06);
+    background: rgba(15, 23, 42, 0.92) !important;
 
-    color: white;
+    color: #ffffff !important;
 
-    border-radius: 12px;
+    -webkit-text-fill-color: #ffffff !important;
 
-    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px !important;
+
+    border: 1px solid rgba(255,255,255,0.10) !important;
+
+    font-size: 16px !important;
+
+    padding: 0.75rem 1rem !important;
+}
+
+/* =====================================================
+   PLACEHOLDER TEXT
+===================================================== */
+
+.stTextInput input::placeholder,
+.stTextArea textarea::placeholder {
+
+    color: #94a3b8 !important;
+
+    opacity: 1 !important;
+}
+
+/* =====================================================
+   INPUT LABELS
+===================================================== */
+
+label,
+.stTextInput label,
+.stTextArea label,
+.stSelectbox label {
+
+    color: #f8fafc !important;
+
+    font-weight: 600 !important;
+
+    font-size: 15px !important;
+}
+
+/* =====================================================
+   INPUT FOCUS
+===================================================== */
+
+.stTextInput input:focus,
+.stTextArea textarea:focus {
+
+    border: 1px solid #3b82f6 !important;
+
+    box-shadow:
+        0 0 0 1px #3b82f6 !important;
+}
+
+/* =====================================================
+   SELECTBOX
+===================================================== */
+
+.stSelectbox div[data-baseweb="select"] > div {
+
+    background: rgba(15, 23, 42, 0.92) !important;
+
+    color: #ffffff !important;
+
+    border-radius: 14px !important;
+
+    border: 1px solid rgba(255,255,255,0.10) !important;
+
+    min-height: 52px;
 }
 
 /* =====================================================
@@ -128,13 +252,24 @@ h1, h2, h3 {
 
 [data-testid="stFileUploader"] {
 
-    background: rgba(255,255,255,0.04);
+    background: rgba(15, 23, 42, 0.55);
 
-    border-radius: 18px;
+    border-radius: 22px;
 
-    padding: 20px;
+    padding: 24px;
 
-    border: 2px dashed rgba(0,229,255,0.4);
+    border: 2px dashed rgba(59,130,246,0.35);
+
+    backdrop-filter: blur(10px);
+}
+
+/* =====================================================
+   FILE UPLOADER TEXT
+===================================================== */
+
+[data-testid="stFileUploader"] * {
+
+    color: #f8fafc !important;
 }
 
 /* =====================================================
@@ -143,16 +278,87 @@ h1, h2, h3 {
 
 [data-testid="stDataFrame"] {
 
-    border-radius: 18px;
+    border-radius: 20px;
 
     overflow: hidden;
+
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+/* =====================================================
+   METRIC CARDS
+===================================================== */
+
+[data-testid="metric-container"] {
+
+    background: rgba(15, 23, 42, 0.65);
+
+    border-radius: 20px;
+
+    padding: 1rem;
+
+    border: 1px solid rgba(255,255,255,0.05);
+
+    box-shadow:
+        0 8px 30px rgba(0,0,0,0.22);
 }
 
 /* =====================================================
    ALERTS
 ===================================================== */
 
-.stAlert {
+.stAlert,
+.stSuccess,
+.stWarning,
+.stInfo,
+.stError {
 
-    border-radius: 14px;
+    border-radius: 16px !important;
+
+    border: none !important;
+}
+
+/* =====================================================
+   FORMS
+===================================================== */
+
+form {
+
+    background: rgba(15, 23, 42, 0.55);
+
+    border-radius: 24px;
+
+    padding: 2rem;
+
+    border: 1px solid rgba(255,255,255,0.06);
+
+    backdrop-filter: blur(12px);
+}
+
+/* =====================================================
+   DIVIDER
+===================================================== */
+
+hr {
+
+    border-color: rgba(255,255,255,0.08);
+}
+
+/* =====================================================
+   STREAMLIT MENU HIDE
+===================================================== */
+
+#MainMenu {
+
+    visibility: hidden;
+}
+
+footer {
+
+    visibility: hidden;
+}
+
+header {
+
+    visibility: hidden;
 }
