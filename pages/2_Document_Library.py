@@ -1,24 +1,10 @@
-import streamlit as st
 import os
+import tempfile
+import traceback
+from datetime import datetime
 
-from sqlalchemy import select
-
-from database.models import documents
-from database.db_manager import engine
-
-from database.delete_document import (
-    delete_document
-)
-
-from modules.encryption.aes_decryptor import (
-    decrypt_file
-)
-
-from security.auth_guard import (
-    require_login
-)
-
-require_login()
+import streamlit as st
+import pandas as pd
 
 # =====================================================
 # PAGE CONFIG
@@ -31,232 +17,484 @@ st.set_page_config(
 )
 
 # =====================================================
-# TITLE
+# AUTH GUARD
+# =====================================================
+
+from security.auth_guard import (
+    require_login
+)
+
+require_login()
+
+# =====================================================
+# LOAD CSS
+# =====================================================
+
+def load_css():
+
+    css_path = "assets/style.css"
+
+    if os.path.exists(css_path):
+
+        with open(
+            css_path,
+            "r",
+            encoding="utf-8"
+        ) as f:
+
+            st.markdown(
+                f"<style>{f.read()}</style>",
+                unsafe_allow_html=True
+            )
+
+load_css()
+
+# =====================================================
+# IMPORT MODULES
+# =====================================================
+
+from database.get_documents import (
+    get_all_documents
+)
+
+from database.supabase_client import (
+    supabase
+)
+
+from modules.encryption.aes_decryptor import (
+    decrypt_file
+)
+
+# =====================================================
+# CREATE TEMP DIRECTORY
+# =====================================================
+
+os.makedirs(
+    "temp_decrypted",
+    exist_ok=True
+)
+
+# =====================================================
+# PAGE TITLE
 # =====================================================
 
 st.title("📚 Document Library")
 
-# =====================================================
-# SEARCH
-# =====================================================
-
-search_query = st.text_input(
-    "🔍 Search documents"
+st.caption(
+    "Browse, search and manage your encrypted documents."
 )
 
-# =====================================================
-# LOAD DOCUMENTS
-# =====================================================
-
-query = select(documents)
-
-with engine.connect() as conn:
-
-    results = conn.execute(query).fetchall()
+st.divider()
 
 # =====================================================
-# FILTER DOCUMENTS
+# FETCH DOCUMENTS
 # =====================================================
 
-filtered_results = []
+try:
 
-for row in results:
+    documents = get_all_documents()
 
-    searchable_text = (
+except Exception as e:
 
-        str(row.document_name)
-        + " "
-        + str(row.document_category)
-        + " "
-        + str(row.tags)
-        + " "
-        + str(row.notes)
+    st.error(
+        f"Error loading documents: {e}"
+    )
 
-    ).lower()
-
-    if search_query.lower() in searchable_text:
-
-        filtered_results.append(row)
+    st.stop()
 
 # =====================================================
 # EMPTY STATE
 # =====================================================
 
-if not filtered_results:
+if not documents:
 
-    st.info("No documents found.")
+    st.info(
+        "No documents found."
+    )
+
+    st.stop()
 
 # =====================================================
-# DOCUMENT CARDS
+# SEARCH + FILTERS
 # =====================================================
 
-else:
+col1, col2 = st.columns([2, 1])
 
-    cols = st.columns(2)
+with col1:
 
-    for index, row in enumerate(filtered_results):
+    search_query = st.text_input(
 
-        with cols[index % 2]:
+        "🔍 Search Documents",
 
-            st.markdown(
-                """
-                <div style="
-                    border:1px solid #2d3748;
-                    border-radius:15px;
-                    padding:20px;
-                    margin-bottom:20px;
-                    background:#111827;
-                ">
-                """,
-                unsafe_allow_html=True
+        placeholder="Search by name, tags, category..."
+    )
+
+with col2:
+
+    categories = list(
+
+        set(
+
+            doc.get(
+                "document_category",
+                "Other"
             )
 
+            for doc in documents
+        )
+    )
+
+    categories.sort()
+
+    selected_category = st.selectbox(
+
+        "📁 Filter Category",
+
+        ["All"] + categories
+    )
+
+# =====================================================
+# FILTER DOCUMENTS
+# =====================================================
+
+filtered_documents = []
+
+for doc in documents:
+
+    document_name = str(
+        doc.get(
+            "document_name",
+            ""
+        )
+    )
+
+    document_category = str(
+        doc.get(
+            "document_category",
+            ""
+        )
+    )
+
+    tags = str(
+        doc.get(
+            "tags",
+            ""
+        )
+    )
+
+    # =============================================
+    # SEARCH FILTER
+    # =============================================
+
+    matches_search = (
+
+        search_query.lower()
+        in (
+            document_name
+            + " "
+            + document_category
+            + " "
+            + tags
+        ).lower()
+    )
+
+    # =============================================
+    # CATEGORY FILTER
+    # =============================================
+
+    matches_category = (
+
+        selected_category == "All"
+
+        or
+
+        document_category == selected_category
+    )
+
+    if matches_search and matches_category:
+
+        filtered_documents.append(doc)
+
+# =====================================================
+# DOCUMENT COUNT
+# =====================================================
+
+st.markdown(
+
+    f"### 📄 Total Documents: "
+    f"{len(filtered_documents)}"
+)
+
+st.divider()
+
+# =====================================================
+# DISPLAY DOCUMENTS
+# =====================================================
+
+for row in filtered_documents:
+
+    try:
+
+        document_name = row.get(
+            "document_name",
+            "Unknown"
+        )
+
+        document_category = row.get(
+            "document_category",
+            "Other"
+        )
+
+        expiry_date = row.get(
+            "expiry_date"
+        )
+
+        tags = row.get(
+            "tags",
+            ""
+        )
+
+        notes = row.get(
+            "notes",
+            ""
+        )
+
+        upload_date = row.get(
+            "upload_date"
+        )
+
+        encrypted_path = row.get(
+            "encrypted_path"
+        )
+
+        # =========================================
+        # CARD
+        # =========================================
+
+        with st.container():
+
+            st.markdown("---")
+
+            col1, col2 = st.columns([4, 1])
+
             # =====================================
-            # DOCUMENT INFO
-            # =====================================
-
-            st.subheader(
-                f"📄 {row.document_name}"
-            )
-
-            st.caption(
-                f"📂 Category: {row.document_category}"
-            )
-
-            if row.tags:
-
-                st.write(
-                    f"🏷️ Tags: {row.tags}"
-                )
-
-            if row.notes:
-
-                st.write(
-                    f"📝 Notes: {row.notes}"
-                )
-
-            st.caption(
-                f"📅 Uploaded: {row.upload_date}"
-            )
-
-            st.divider()
-
-            # =====================================
-            # BUTTONS
-            # =====================================
-
-            col1, col2, col3 = st.columns(3)
-
-            # =====================================
-            # VIEW
+            # LEFT SIDE
             # =====================================
 
             with col1:
 
+                st.markdown(
+                    f"## 📄 {document_name}"
+                )
+
+                st.markdown(
+                    f"**📁 Category:** "
+                    f"{document_category}"
+                )
+
+                if tags:
+
+                    st.markdown(
+                        f"**🏷️ Tags:** "
+                        f"{tags}"
+                    )
+
+                if notes:
+
+                    st.markdown(
+                        f"**📝 Notes:** "
+                        f"{notes}"
+                    )
+
+                if expiry_date:
+
+                    st.markdown(
+                        f"**📅 Expiry:** "
+                        f"{expiry_date}"
+                    )
+
+                if upload_date:
+
+                    st.markdown(
+                        f"**⏱️ Uploaded:** "
+                        f"{upload_date}"
+                    )
+
+            # =====================================
+            # RIGHT SIDE
+            # =====================================
+
+            with col2:
+
+                # =================================
+                # DOWNLOAD ENCRYPTED FILE
+                # =================================
+
                 if st.button(
-                    "👁 View",
-                    key=f"view_{row.id}"
+
+                    "👁️ View",
+
+                    key=f"view_{row['id']}"
                 ):
 
-                    os.makedirs(
-                        "temp_decrypted",
-                        exist_ok=True
-                    )
+                    try:
 
-                    temp_output_path = os.path.join(
+                        # =========================
+                        # DOWNLOAD FROM SUPABASE
+                        # =========================
 
-                        "temp_decrypted",
+                        file_bytes = (
 
-                        row.document_name
-                    )
-
-                    decrypt_file(
-
-                        row.encrypted_path,
-
-                        temp_output_path
-                    )
-
-                    # IMAGE
-                    if row.document_name.lower().endswith(
-                        (".png", ".jpg", ".jpeg")
-                    ):
-
-                        st.image(
-                            temp_output_path
+                            supabase.storage
+                            .from_(
+                                "encrypted-documents"
+                            )
+                            .download(
+                                encrypted_path
+                            )
                         )
 
-                    # PDF
-                    elif row.document_name.lower().endswith(
-                        ".pdf"
-                    ):
+                        # =========================
+                        # SAVE TEMP ENCRYPTED FILE
+                        # =========================
+
+                        temp_encrypted_path = os.path.join(
+
+                            "temp_decrypted",
+
+                            encrypted_path
+                        )
 
                         with open(
-                            temp_output_path,
+                            temp_encrypted_path,
+                            "wb"
+                        ) as f:
+
+                            f.write(file_bytes)
+
+                        # =========================
+                        # DECRYPT TEMP FILE
+                        # =========================
+
+                        decrypted_output_path = os.path.join(
+
+                            "temp_decrypted",
+
+                            document_name
+                        )
+
+                        decrypt_file(
+
+                            temp_encrypted_path,
+
+                            decrypted_output_path
+                        )
+
+                        # =========================
+                        # OPEN FILE
+                        # =========================
+
+                        with open(
+
+                            decrypted_output_path,
+
                             "rb"
                         ) as file:
 
                             st.download_button(
 
-                                label="📥 Download PDF",
+                                label="⬇️ Download",
 
                                 data=file,
 
-                                file_name=row.document_name,
+                                file_name=document_name,
 
-                                mime="application/pdf",
+                                mime="application/octet-stream",
 
-                                key=f"download_{row.id}"
+                                key=f"download_{row['id']}"
                             )
 
-            # =====================================
-            # EDIT
-            # =====================================
+                        st.success(
+                            "Document ready."
+                        )
 
-            with col2:
+                    except Exception as e:
+
+                        st.error(
+                            f"View failed: {e}"
+                        )
+
+                        st.code(
+                            traceback.format_exc()
+                        )
+
+                # =================================
+                # EDIT BUTTON
+                # =================================
 
                 if st.button(
-                    "✏ Edit",
-                    key=f"edit_{row.id}"
+
+                    "✏️ Edit",
+
+                    key=f"edit_{row['id']}"
                 ):
 
                     st.session_state[
-                        "selected_document_id"
-                    ] = row.id
+                        "edit_document_id"
+                    ] = row["id"]
 
                     st.switch_page(
-                        "pages/3_Edit_Document.py"
+                        "pages/3_edit_document.py"
                     )
 
-            # =====================================
-            # DELETE
-            # =====================================
+    except Exception as e:
 
-            with col3:
+        st.error(
+            f"Error displaying document: {e}"
+        )
 
-                if st.button(
-                    "🗑 Delete",
-                    key=f"delete_{row.id}"
-                ):
+        st.code(
+            traceback.format_exc()
+        )
 
-                    success, message = delete_document(
+# =====================================================
+# SUMMARY TABLE
+# =====================================================
 
-                        document_id=row.id,
+st.divider()
 
-                        encrypted_path=row.encrypted_path
-                    )
+st.markdown("## 📊 Library Summary")
 
-                    if success:
+summary_data = []
 
-                        st.success(message)
+for doc in filtered_documents:
 
-                        st.rerun()
+    summary_data.append({
 
-                    else:
+        "Document": doc.get(
+            "document_name"
+        ),
 
-                        st.error(message)
+        "Category": doc.get(
+            "document_category"
+        ),
 
-            st.markdown(
-                "</div>",
-                unsafe_allow_html=True
-            )
+        "Expiry Date": doc.get(
+            "expiry_date"
+        ),
+
+        "Tags": doc.get(
+            "tags"
+        )
+    })
+
+summary_df = pd.DataFrame(
+    summary_data
+)
+
+st.dataframe(
+
+    summary_df,
+
+    use_container_width=True
+)
