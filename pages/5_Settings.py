@@ -4,6 +4,12 @@ from security.master_auth import (
     change_master_password
 )
 
+from security.auth_guard import (
+    require_login
+)
+
+require_login()
+
 # =====================================================
 # PAGE CONFIG
 # =====================================================
