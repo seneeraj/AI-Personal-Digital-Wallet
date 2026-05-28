@@ -1,8 +1,11 @@
-import streamlit as st
-import hashlib
 import os
+import hashlib
 
-MASTER_FILE = "security/master.hash"
+# =====================================================
+# PASSWORD FILE
+# =====================================================
+
+PASSWORD_FILE = "master_password.hash"
 
 # =====================================================
 # HASH PASSWORD
@@ -17,177 +20,80 @@ def hash_password(password):
     ).hexdigest()
 
 # =====================================================
+# PASSWORD EXISTS
+# =====================================================
+
+def password_exists():
+
+    return os.path.exists(
+        PASSWORD_FILE
+    )
+
+# =====================================================
+# SAVE MASTER PASSWORD
+# =====================================================
+
+def save_master_password(password):
+
+    hashed_password = hash_password(
+        password
+    )
+
+    with open(
+
+        PASSWORD_FILE,
+
+        "w"
+
+    ) as f:
+
+        f.write(hashed_password)
+
+# =====================================================
 # SETUP MASTER PASSWORD
 # =====================================================
 
-def setup_master_password():
+def setup_master_password(password):
 
-    st.title("🔐 Create Master Password")
-
-    password = st.text_input(
-
-        "Create Password",
-
-        type="password"
+    save_master_password(
+        password
     )
-
-    confirm_password = st.text_input(
-
-        "Confirm Password",
-
-        type="password"
-    )
-
-    if st.button("Create Vault"):
-
-        if not password:
-
-            st.error(
-                "Password cannot be empty."
-            )
-
-        elif password != confirm_password:
-
-            st.error(
-                "Passwords do not match."
-            )
-
-        else:
-
-            hashed = hash_password(
-                password
-            )
-
-            os.makedirs(
-                "security",
-                exist_ok=True
-            )
-
-            with open(
-                MASTER_FILE,
-                "w"
-            ) as f:
-
-                f.write(hashed)
-
-            st.success(
-                "Vault created successfully."
-            )
-
-            st.info(
-                "Please refresh the app."
-            )
 
 # =====================================================
-# UNLOCK VAULT
+# VERIFY MASTER PASSWORD
 # =====================================================
 
-def unlock_vault():
+def verify_master_password(password):
 
-    st.title("🔓 Unlock Vault")
+    if not password_exists():
 
-    password = st.text_input(
+        return False
 
-        "Enter Master Password",
+    with open(
 
-        type="password"
+        PASSWORD_FILE,
+
+        "r"
+
+    ) as f:
+
+        saved_hash = f.read()
+
+    return (
+
+        hash_password(password)
+
+        ==
+
+        saved_hash
     )
-
-    if st.button("Unlock Vault"):
-
-        if not os.path.exists(
-            MASTER_FILE
-        ):
-
-            st.error(
-                "Master password not found."
-            )
-
-            return
-
-        with open(
-            MASTER_FILE,
-            "r"
-        ) as f:
-
-            stored_hash = f.read().strip()
-
-        entered_hash = hash_password(
-            password
-        )
-
-        if entered_hash == stored_hash:
-
-            st.session_state[
-                "vault_unlocked"
-            ] = True
-
-            st.rerun()
-
-        else:
-
-            st.error(
-                "Incorrect password."
-            )
 
 # =====================================================
 # CHANGE MASTER PASSWORD
 # =====================================================
 
-def change_master_password(
+def change_master_password(new_password):
 
-    current_password,
-    new_password
-):
-
-    try:
-
-        if not os.path.exists(
-            MASTER_FILE
-        ):
-
-            return (
-                False,
-                "Master password file missing."
-            )
-
-        with open(
-            MASTER_FILE,
-            "r"
-        ) as f:
-
-            stored_hash = f.read().strip()
-
-        current_hash = hash_password(
-            current_password
-        )
-
-        if current_hash != stored_hash:
-
-            return (
-                False,
-                "Current password is incorrect."
-            )
-
-        new_hash = hash_password(
-            new_password
-        )
-
-        with open(
-            MASTER_FILE,
-            "w"
-        ) as f:
-
-            f.write(new_hash)
-
-        return (
-            True,
-            "Password updated successfully."
-        )
-
-    except Exception as e:
-
-        return (
-            False,
-            str(e)
-        )
+    save_master_password(
+        new_password
+    )
