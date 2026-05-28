@@ -1,19 +1,33 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-DATABASE_URL = "sqlite:///database/db.sqlite3"
+import os
 
-engine = create_engine(DATABASE_URL)
+# =====================================================
+# CREATE RUNTIME DATABASE DIRECTORY
+# =====================================================
 
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine
+os.makedirs(
+    "/tmp/ai_vault_db",
+    exist_ok=True
 )
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# =====================================================
+# DATABASE PATH
+# =====================================================
+
+DATABASE_PATH = (
+    "/tmp/ai_vault_db/vault.db"
+)
+
+# =====================================================
+# SQLALCHEMY ENGINE
+# =====================================================
+
+engine = create_engine(
+
+    f"sqlite:///{DATABASE_PATH}",
+
+    connect_args={
+        "check_same_thread": False
+    }
+)
