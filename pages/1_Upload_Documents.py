@@ -289,11 +289,12 @@ if st.button("🚀 Upload Documents"):
                     + ".enc"
                 )
 
-                encrypted_path = os.path.join(
-
-                    "encrypted_storage",
-
-                    encrypted_filename
+                # =============================================
+                # UNIQUE ENCRYPTED FILENAME
+                # =============================================
+                
+                unique_filename = (
+                    str(uuid.uuid4())
                 )
 
                 # =====================================
