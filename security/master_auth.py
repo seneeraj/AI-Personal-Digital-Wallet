@@ -1,5 +1,6 @@
 import os
 import hashlib
+import streamlit as st
 
 # =====================================================
 # PASSWORD FILE
@@ -97,3 +98,33 @@ def change_master_password(new_password):
     save_master_password(
         new_password
     )
+
+# =====================================================
+# UNLOCK VAULT
+# =====================================================
+
+def unlock_vault(password):
+
+    valid = verify_master_password(
+        password
+    )
+
+    if valid:
+
+        st.session_state[
+            "vault_unlocked"
+        ] = True
+
+        return True
+
+    return False
+
+# =====================================================
+# LOCK VAULT
+# =====================================================
+
+def lock_vault():
+
+    st.session_state[
+        "vault_unlocked"
+    ] = False
