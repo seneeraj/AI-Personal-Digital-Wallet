@@ -24,7 +24,11 @@ from modules.ai.expiry_detector import (
 from database.insert_document import (
     insert_document
 )
+from security.auth_guard import (
+    require_login
+)
 
+require_login()
 # =====================================================
 # PAGE CONFIG
 # =====================================================
