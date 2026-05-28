@@ -24,11 +24,18 @@ from modules.ai.expiry_detector import (
 from database.insert_document import (
     insert_document
 )
+
 from security.auth_guard import (
     require_login
 )
 
+from modules.storage.supabase_storage import (
+    upload_encrypted_file
+)
+
+
 require_login()
+
 # =====================================================
 # PAGE CONFIG
 # =====================================================
@@ -300,6 +307,20 @@ if st.button("🚀 Upload Documents"):
                     encrypted_path
                 )
 
+                # =============================================
+                # UPLOAD ENCRYPTED FILE TO SUPABASE
+                # =============================================
+
+                upload_encrypted_file(
+
+                    encrypted_path,
+
+                    unique_filename + ".enc"
+                )
+
+
+
+
                 # =====================================
                 # SAVE TO DATABASE
                 # =====================================
@@ -310,8 +331,9 @@ if st.button("🚀 Upload Documents"):
 
                     document_category=final_category,
 
-                    encrypted_path=encrypted_path,
-
+                    encrypted_path=(
+                    unique_filename + ".enc"
+                ),
                     ocr_text=ocr_text,
 
                     tags=combined_tags,
