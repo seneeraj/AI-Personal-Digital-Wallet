@@ -1,10 +1,7 @@
 import os
-import tempfile
 import traceback
-from datetime import datetime
-
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
 # =====================================================
 # PAGE CONFIG
@@ -50,7 +47,7 @@ def load_css():
 load_css()
 
 # =====================================================
-# IMPORT MODULES
+# IMPORTS
 # =====================================================
 
 from database.get_documents import (
@@ -66,7 +63,7 @@ from modules.encryption.aes_decryptor import (
 )
 
 # =====================================================
-# CREATE TEMP DIRECTORY
+# TEMP DIRECTORY
 # =====================================================
 
 os.makedirs(
@@ -78,13 +75,18 @@ os.makedirs(
 # PAGE TITLE
 # =====================================================
 
-st.title("📚 Document Library")
-
-st.caption(
-    "Browse, search and manage your encrypted documents."
+st.markdown(
+    """
+    <div class='glass-card'>
+        <h1>📚 Document Library</h1>
+        <p>
+            Browse, manage and securely access
+            your encrypted documents.
+        </p>
+    </div>
+    """,
+    unsafe_allow_html=True
 )
-
-st.divider()
 
 # =====================================================
 # FETCH DOCUMENTS
@@ -109,7 +111,7 @@ except Exception as e:
 if not documents:
 
     st.info(
-        "No documents found."
+        "No documents available."
     )
 
     st.stop()
@@ -118,15 +120,17 @@ if not documents:
 # SEARCH + FILTERS
 # =====================================================
 
-col1, col2 = st.columns([2, 1])
+st.markdown("## 🔍 Search & Filters")
+
+col1, col2 = st.columns([3, 1])
 
 with col1:
 
     search_query = st.text_input(
-
-        "🔍 Search Documents",
-
-        placeholder="Search by name, tags, category..."
+        "Search Documents",
+        placeholder=(
+            "Search by name, category, tags..."
+        )
     )
 
 with col2:
@@ -148,59 +152,57 @@ with col2:
 
     selected_category = st.selectbox(
 
-        "📁 Filter Category",
+        "Filter Category",
 
         ["All"] + categories
     )
 
+st.divider()
+
 # =====================================================
-# FILTER DOCUMENTS
+# FILTER LOGIC
 # =====================================================
 
 filtered_documents = []
 
-for doc in documents:
+for row in documents:
 
     document_name = str(
-        doc.get(
+        row.get(
             "document_name",
             ""
         )
     )
 
     document_category = str(
-        doc.get(
+        row.get(
             "document_category",
             ""
         )
     )
 
     tags = str(
-        doc.get(
+        row.get(
             "tags",
             ""
         )
     )
 
-    # =============================================
-    # SEARCH FILTER
-    # =============================================
+    combined_text = (
+
+        document_name
+        + " "
+        + document_category
+        + " "
+        + tags
+
+    ).lower()
 
     matches_search = (
 
         search_query.lower()
-        in (
-            document_name
-            + " "
-            + document_category
-            + " "
-            + tags
-        ).lower()
+        in combined_text
     )
-
-    # =============================================
-    # CATEGORY FILTER
-    # =============================================
 
     matches_category = (
 
@@ -208,19 +210,19 @@ for doc in documents:
 
         or
 
-        document_category == selected_category
+        document_category
+        == selected_category
     )
 
     if matches_search and matches_category:
 
-        filtered_documents.append(doc)
+        filtered_documents.append(row)
 
 # =====================================================
-# DOCUMENT COUNT
+# SUMMARY
 # =====================================================
 
 st.markdown(
-
     f"### 📄 Total Documents: "
     f"{len(filtered_documents)}"
 )
@@ -235,100 +237,68 @@ for row in filtered_documents:
 
     try:
 
-        document_name = row.get(
-            "document_name",
-            "Unknown"
-        )
-
-        document_category = row.get(
-            "document_category",
-            "Other"
-        )
-
-        expiry_date = row.get(
-            "expiry_date"
-        )
-
-        tags = row.get(
-            "tags",
-            ""
-        )
-
-        notes = row.get(
-            "notes",
-            ""
-        )
-
-        upload_date = row.get(
-            "upload_date"
-        )
-
-        encrypted_path = row.get(
-            "encrypted_path"
-        )
-
-        # =========================================
-        # CARD
-        # =========================================
-
         with st.container():
 
-            st.markdown("---")
+            st.markdown(
+                "<div class='glass-card'>",
+                unsafe_allow_html=True
+            )
+
+            # =========================================
+            # DETAILS
+            # =========================================
 
             col1, col2 = st.columns([4, 1])
-
-            # =====================================
-            # LEFT SIDE
-            # =====================================
 
             with col1:
 
                 st.markdown(
-                    f"## 📄 {document_name}"
+                    f"## 📄 "
+                    f"{row.get('document_name', '')}"
                 )
 
                 st.markdown(
                     f"**📁 Category:** "
-                    f"{document_category}"
+                    f"{row.get('document_category', '')}"
                 )
 
-                if tags:
+                if row.get("tags"):
 
                     st.markdown(
                         f"**🏷️ Tags:** "
-                        f"{tags}"
+                        f"{row.get('tags')}"
                     )
 
-                if notes:
+                if row.get("notes"):
 
                     st.markdown(
                         f"**📝 Notes:** "
-                        f"{notes}"
+                        f"{row.get('notes')}"
                     )
 
-                if expiry_date:
+                if row.get("expiry_date"):
 
                     st.markdown(
-                        f"**📅 Expiry:** "
-                        f"{expiry_date}"
+                        f"**📅 Expiry Date:** "
+                        f"{row.get('expiry_date')}"
                     )
 
-                if upload_date:
+                if row.get("upload_date"):
 
                     st.markdown(
                         f"**⏱️ Uploaded:** "
-                        f"{upload_date}"
+                        f"{row.get('upload_date')}"
                     )
 
-            # =====================================
-            # RIGHT SIDE
-            # =====================================
+            # =========================================
+            # ACTION BUTTONS
+            # =========================================
 
             with col2:
 
-                # =================================
-                # DOWNLOAD ENCRYPTED FILE
-                # =================================
+                # =====================================
+                # VIEW BUTTON
+                # =====================================
 
                 if st.button(
 
@@ -339,9 +309,9 @@ for row in filtered_documents:
 
                     try:
 
-                        # =========================
-                        # DOWNLOAD FROM SUPABASE
-                        # =========================
+                        encrypted_path = row.get(
+                            "encrypted_path"
+                        )
 
                         file_bytes = (
 
@@ -353,10 +323,6 @@ for row in filtered_documents:
                                 encrypted_path
                             )
                         )
-
-                        # =========================
-                        # SAVE TEMP ENCRYPTED FILE
-                        # =========================
 
                         temp_encrypted_path = os.path.join(
 
@@ -372,15 +338,13 @@ for row in filtered_documents:
 
                             f.write(file_bytes)
 
-                        # =========================
-                        # DECRYPT TEMP FILE
-                        # =========================
-
                         decrypted_output_path = os.path.join(
 
                             "temp_decrypted",
 
-                            document_name
+                            row.get(
+                                "document_name"
+                            )
                         )
 
                         decrypt_file(
@@ -390,15 +354,12 @@ for row in filtered_documents:
                             decrypted_output_path
                         )
 
-                        # =========================
-                        # OPEN FILE
-                        # =========================
-
                         with open(
 
                             decrypted_output_path,
 
                             "rb"
+
                         ) as file:
 
                             st.download_button(
@@ -407,7 +368,9 @@ for row in filtered_documents:
 
                                 data=file,
 
-                                file_name=document_name,
+                                file_name=row.get(
+                                    "document_name"
+                                ),
 
                                 mime="application/octet-stream",
 
@@ -428,9 +391,9 @@ for row in filtered_documents:
                             traceback.format_exc()
                         )
 
-                # =================================
+                # =====================================
                 # EDIT BUTTON
-                # =================================
+                # =====================================
 
                 if st.button(
 
@@ -446,6 +409,71 @@ for row in filtered_documents:
                     st.switch_page(
                         "pages/3_edit_document.py"
                     )
+
+                # =====================================
+                # DELETE BUTTON
+                # =====================================
+
+                if st.button(
+
+                    "🗑️ Delete",
+
+                    key=f"delete_{row['id']}"
+                ):
+
+                    try:
+
+                        encrypted_path = row.get(
+                            "encrypted_path"
+                        )
+
+                        # =============================
+                        # DELETE FROM STORAGE
+                        # =============================
+
+                        if encrypted_path:
+
+                            (
+                                supabase.storage
+                                .from_(
+                                    "encrypted-documents"
+                                )
+                                .remove(
+                                    [encrypted_path]
+                                )
+                            )
+
+                        # =============================
+                        # DELETE DATABASE RECORD
+                        # =============================
+
+                        (
+                            supabase
+                            .table("documents")
+                            .delete()
+                            .eq(
+                                "id",
+                                row["id"]
+                            )
+                            .execute()
+                        )
+
+                        st.success(
+                            "Document deleted successfully."
+                        )
+
+                        st.rerun()
+
+                    except Exception as e:
+
+                        st.error(
+                            f"Delete failed: {e}"
+                        )
+
+            st.markdown(
+                "</div>",
+                unsafe_allow_html=True
+            )
 
     except Exception as e:
 
@@ -467,25 +495,29 @@ st.markdown("## 📊 Library Summary")
 
 summary_data = []
 
-for doc in filtered_documents:
+for row in filtered_documents:
 
     summary_data.append({
 
-        "Document": doc.get(
-            "document_name"
-        ),
+        "Document":
+            row.get(
+                "document_name"
+            ),
 
-        "Category": doc.get(
-            "document_category"
-        ),
+        "Category":
+            row.get(
+                "document_category"
+            ),
 
-        "Expiry Date": doc.get(
-            "expiry_date"
-        ),
+        "Expiry":
+            row.get(
+                "expiry_date"
+            ),
 
-        "Tags": doc.get(
-            "tags"
-        )
+        "Tags":
+            row.get(
+                "tags"
+            )
     })
 
 summary_df = pd.DataFrame(
@@ -493,8 +525,6 @@ summary_df = pd.DataFrame(
 )
 
 st.dataframe(
-
     summary_df,
-
     use_container_width=True
 )
