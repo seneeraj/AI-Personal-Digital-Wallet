@@ -1,4 +1,4 @@
-superbase
+supabase
 streamlit
 streamlit-authenticator
 pandas
