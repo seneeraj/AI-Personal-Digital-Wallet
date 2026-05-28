@@ -1,4 +1,4 @@
-import os
+import streamlit as st
 
 from database.supabase_client import (
     supabase
@@ -16,12 +16,20 @@ def upload_encrypted_file(
 
     try:
 
+        # =============================================
+        # READ FILE
+        # =============================================
+
         with open(
             local_file_path,
             "rb"
         ) as f:
 
             file_data = f.read()
+
+        # =============================================
+        # UPLOAD TO SUPABASE
+        # =============================================
 
         response = (
 
@@ -35,10 +43,17 @@ def upload_encrypted_file(
             )
         )
 
+        st.success(
+            f"Uploaded to storage: "
+            f"{storage_filename}"
+        )
+
         return response
 
     except Exception as e:
 
-        print(e)
+        st.error(
+            f"Storage upload failed: {e}"
+        )
 
         return None
