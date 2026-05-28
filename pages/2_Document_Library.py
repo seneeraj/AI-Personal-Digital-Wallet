@@ -14,6 +14,12 @@ from modules.encryption.aes_decryptor import (
     decrypt_file
 )
 
+from security.auth_guard import (
+    require_login
+)
+
+require_login()
+
 # =====================================================
 # PAGE CONFIG
 # =====================================================
