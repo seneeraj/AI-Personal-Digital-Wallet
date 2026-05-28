@@ -1,3 +1,4 @@
+superbase
 streamlit
 streamlit-authenticator
 pandas
