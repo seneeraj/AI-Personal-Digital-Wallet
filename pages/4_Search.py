@@ -1,9 +1,24 @@
+import os
+
 import streamlit as st
+import pandas as pd
 
-from sqlalchemy import select
+# =====================================================
+# PAGE CONFIG
+# =====================================================
 
-from database.models import documents
-from database.db_manager import engine
+st.set_page_config(
+
+    page_title="Search Documents",
+
+    page_icon="🔍",
+
+    layout="wide"
+)
+
+# =====================================================
+# AUTH GUARD
+# =====================================================
 
 from security.auth_guard import (
     require_login
@@ -12,27 +27,81 @@ from security.auth_guard import (
 require_login()
 
 # =====================================================
-# PAGE CONFIG
+# LOAD CSS
 # =====================================================
 
-st.set_page_config(
-    page_title="Smart Search",
-    page_icon="🔍",
-    layout="wide"
+def load_css():
+
+    css_path = "assets/style.css"
+
+    if os.path.exists(css_path):
+
+        with open(
+
+            css_path,
+
+            "r",
+
+            encoding="utf-8"
+
+        ) as f:
+
+            st.markdown(
+
+                f"<style>{f.read()}</style>",
+
+                unsafe_allow_html=True
+            )
+
+load_css()
+
+# =====================================================
+# IMPORTS
+# =====================================================
+
+from database.get_documents import (
+    get_all_documents
 )
 
 # =====================================================
-# TITLE
+# PAGE TITLE
 # =====================================================
 
-st.title("🔍 Smart Document Search")
+st.title("🔍 Search Documents")
 
 st.caption(
-    "Search documents using names, "
-    "tags, notes, OCR text, or categories."
+    "Search documents using names, tags, OCR text and categories."
 )
 
 st.divider()
+
+# =====================================================
+# FETCH DOCUMENTS
+# =====================================================
+
+try:
+
+    documents = get_all_documents()
+
+except Exception as e:
+
+    st.error(
+        f"Error loading documents: {e}"
+    )
+
+    st.stop()
+
+# =====================================================
+# EMPTY STATE
+# =====================================================
+
+if not documents:
+
+    st.info(
+        "No documents found."
+    )
+
+    st.stop()
 
 # =====================================================
 # SEARCH INPUT
@@ -40,11 +109,11 @@ st.divider()
 
 search_query = st.text_input(
 
-    "🔎 Search your vault",
+    "🔍 Search",
 
     placeholder=(
-        "Example: PAN card, "
-        "medical report, passport"
+        "Search by document name, "
+        "OCR text, tags, category..."
     )
 )
 
@@ -52,197 +121,204 @@ search_query = st.text_input(
 # CATEGORY FILTER
 # =====================================================
 
-categories = [
+categories = list(
 
-    "All",
+    set(
 
-    "Personal",
-    "Financial",
-    "Medical",
-    "Education",
-    "Legal",
-    "Uncategorized"
-]
+        doc.get(
+            "document_category",
+            "Other"
+        )
+
+        for doc in documents
+    )
+)
+
+categories.sort()
 
 selected_category = st.selectbox(
 
-    "📂 Filter by Category",
+    "📁 Filter Category",
 
-    categories
+    ["All"] + categories
 )
 
 st.divider()
 
 # =====================================================
-# LOAD DOCUMENTS
-# =====================================================
-
-query = select(documents)
-
-with engine.connect() as conn:
-
-    results = conn.execute(query).fetchall()
-
-# =====================================================
 # SEARCH RESULTS
 # =====================================================
 
-filtered_results = []
+results = []
 
-for row in results:
+for doc in documents:
 
-    searchable_text = (
+    document_name = str(
 
-        str(row.document_name)
-        + " "
-        + str(row.document_category)
-        + " "
-        + str(row.tags)
-        + " "
-        + str(row.notes)
-        + " "
-        + str(row.ocr_text)
-
-    ).lower()
-
-    # =============================================
-    # SEARCH MATCH
-    # =============================================
-
-    query_match = (
-        search_query.lower()
-        in searchable_text
+        doc.get(
+            "document_name",
+            ""
+        )
     )
 
-    # =============================================
-    # CATEGORY MATCH
-    # =============================================
+    document_category = str(
 
-    if selected_category == "All":
-
-        category_match = True
-
-    else:
-
-        category_match = (
-
-            row.document_category
-            == selected_category
+        doc.get(
+            "document_category",
+            ""
         )
+    )
 
-    # =============================================
-    # FINAL FILTER
-    # =============================================
+    tags = str(
 
-    if query_match and category_match:
+        doc.get(
+            "tags",
+            ""
+        )
+    )
 
-        filtered_results.append(row)
+    ocr_text = str(
+
+        doc.get(
+            "ocr_text",
+            ""
+        )
+    )
+
+    combined_text = (
+
+        document_name
+        + " "
+        + document_category
+        + " "
+        + tags
+        + " "
+        + ocr_text
+    ).lower()
+
+    matches_search = (
+
+        search_query.lower()
+        in combined_text
+    )
+
+    matches_category = (
+
+        selected_category == "All"
+
+        or
+
+        document_category == selected_category
+    )
+
+    if matches_search and matches_category:
+
+        results.append(doc)
 
 # =====================================================
 # RESULT COUNT
 # =====================================================
 
-st.subheader(
-    f"📄 Results Found: "
-    f"{len(filtered_results)}"
+st.markdown(
+
+    f"### 📄 Search Results: "
+    f"{len(results)}"
 )
 
-# =====================================================
-# EMPTY STATE
-# =====================================================
-
-if not filtered_results:
-
-    st.info(
-        "No matching documents found."
-    )
+st.divider()
 
 # =====================================================
 # DISPLAY RESULTS
 # =====================================================
 
+if results:
+
+    for row in results:
+
+        with st.container():
+
+            st.markdown("---")
+
+            st.markdown(
+                f"## 📄 "
+                f"{row.get('document_name', '')}"
+            )
+
+            st.markdown(
+                f"**📁 Category:** "
+                f"{row.get('document_category', '')}"
+            )
+
+            if row.get("tags"):
+
+                st.markdown(
+                    f"**🏷️ Tags:** "
+                    f"{row.get('tags')}"
+                )
+
+            if row.get("expiry_date"):
+
+                st.markdown(
+                    f"**📅 Expiry Date:** "
+                    f"{row.get('expiry_date')}"
+                )
+
+            if row.get("notes"):
+
+                st.markdown(
+                    f"**📝 Notes:** "
+                    f"{row.get('notes')}"
+                )
+
+            upload_date = row.get(
+                "upload_date"
+            )
+
+            if upload_date:
+
+                st.markdown(
+                    f"**⏱️ Uploaded:** "
+                    f"{upload_date}"
+                )
+
 else:
 
-    cols = st.columns(2)
+    st.warning(
+        "No matching documents found."
+    )
 
-    for index, row in enumerate(filtered_results):
+# =====================================================
+# SUMMARY TABLE
+# =====================================================
 
-        with cols[index % 2]:
+st.divider()
 
-            st.markdown(
-                """
-                <div style="
-                    border:1px solid #2d3748;
-                    border-radius:15px;
-                    padding:20px;
-                    margin-bottom:20px;
-                    background:#111827;
-                ">
-                """,
-                unsafe_allow_html=True
-            )
+summary_data = []
 
-            # =====================================
-            # DOCUMENT NAME
-            # =====================================
+for row in results:
 
-            st.subheader(
-                f"📄 {row.document_name}"
-            )
+    summary_data.append({
 
-            # =====================================
-            # CATEGORY
-            # =====================================
+        "Document":
+            row.get("document_name"),
 
-            st.caption(
-                f"📂 {row.document_category}"
-            )
+        "Category":
+            row.get("document_category"),
 
-            # =====================================
-            # TAGS
-            # =====================================
+        "Expiry":
+            row.get("expiry_date"),
 
-            if row.tags:
+        "Tags":
+            row.get("tags")
+    })
 
-                st.write(
-                    f"🏷️ {row.tags}"
-                )
+summary_df = pd.DataFrame(
+    summary_data
+)
 
-            # =====================================
-            # NOTES
-            # =====================================
+st.dataframe(
 
-            if row.notes:
+    summary_df,
 
-                st.write(
-                    f"📝 {row.notes}"
-                )
-
-            # =====================================
-            # OCR PREVIEW
-            # =====================================
-
-            if row.ocr_text:
-
-                preview = (
-                    row.ocr_text[:250]
-                    + "..."
-                )
-
-                st.caption(
-                    f"📖 OCR Preview: {preview}"
-                )
-
-            # =====================================
-            # UPLOAD DATE
-            # =====================================
-
-            st.caption(
-                f"📅 Uploaded: "
-                f"{row.upload_date}"
-            )
-
-            st.markdown(
-                "</div>",
-                unsafe_allow_html=True
-            )
+    use_container_width=True
+)
