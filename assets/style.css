@@ -447,3 +447,51 @@ button div {
     color: #cbd5e1 !important;
 }
 
+/* =====================================================
+   SELECTBOX DROPDOWN FIX
+===================================================== */
+
+/* Selected value */
+
+.stSelectbox div[data-baseweb="select"] {
+
+    color: #ffffff !important;
+}
+
+/* Dropdown menu */
+
+div[role="listbox"] {
+
+    background-color: #1e293b !important;
+
+    color: #ffffff !important;
+
+    border-radius: 12px !important;
+}
+
+/* Dropdown options */
+
+div[role="option"] {
+
+    background-color: #1e293b !important;
+
+    color: #ffffff !important;
+}
+
+/* Hover */
+
+div[role="option"]:hover {
+
+    background-color: #334155 !important;
+
+    color: #ffffff !important;
+}
+
+/* Selected option */
+
+div[aria-selected="true"] {
+
+    background-color: #2563eb !important;
+
+    color: #ffffff !important;
+}
